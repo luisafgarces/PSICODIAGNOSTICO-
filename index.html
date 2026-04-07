@@ -826,7 +826,7 @@ async function analizar() {
     });
 
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    if (data.error) throw new Error(data.error.message + ' (type: ' + data.error.type + ')');
 
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -839,7 +839,7 @@ async function analizar() {
 
   } catch(e) {
     console.error(e);
-    showError('Error al procesar. Verifica tu API key en CONFIG e intenta de nuevo.');
+    showError('Error: ' + e.message);
   } finally {
     clearInterval(interval);
     btn.disabled = false;
