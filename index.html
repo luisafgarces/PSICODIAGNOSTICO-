@@ -626,13 +626,13 @@
   <!-- SETTINGS VIEW -->
   <div class="view" id="view-settings">
     <div class="settings-section">
-      <div class="settings-label">API Key de Anthropic</div>
+      <div class="settings-label">API Key de Gemini</div>
       <div class="settings-row">
-        <span class="settings-row-label">sk-ant-...</span>
-        <input type="password" id="api-key-input" placeholder="Pega tu API key" />
+        <span class="settings-row-label">AIza...</span>
+        <input type="password" id="api-key-input" placeholder="Pega tu API key de Gemini" />
       </div>
       <div class="info-text">
-        Obtén tu API key en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Se guarda localmente en tu dispositivo, nunca se envía a ningún servidor externo excepto la API de Anthropic.
+        Obtén tu API key en <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>. Se guarda localmente en tu dispositivo, nunca se envía a ningún servidor externo excepto la API de Gemini.
       </div>
     </div>
 
@@ -725,7 +725,7 @@ function updateSettingsInfo() {
   const h = getHistory();
   document.getElementById('history-count').textContent = h.length + ' análisis guardados';
   const stored = getApiKey();
-  if (stored) document.getElementById('api-key-input').placeholder = stored.slice(0,12) + '...';
+  if (stored) document.getElementById('api-key-input').placeholder = stored.slice(0,8) + '...';
 }
 
 // HISTORY
@@ -790,7 +790,7 @@ async function analizar() {
 
   const key = getApiKey();
   if (!key) {
-    showError('Configura tu API key de Anthropic en la pestaña CONFIG antes de analizar.');
+    showError('Configura tu API key de Gemini en la pestaña CONFIG antes de analizar.');
     return;
   }
 
@@ -809,26 +809,20 @@ async function analizar() {
   }, 2000);
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${key}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: nota }]
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: nota }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
       })
     });
 
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message + ' (type: ' + data.error.type + ')');
+    if (data.error) throw new Error(data.error.message);
 
-    const raw = data.content?.find(b => b.type === 'text')?.text || '';
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
